@@ -1,0 +1,29 @@
+<h2>Contador de visitas Puebly: </h2>
+<p id="visits"></p>
+
+<script type="module">
+    await fetch('/visits', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            hmac: 'hmac',
+            uuid: 'uuid',
+            post_id: '0',
+            conversion_type: 'visit'
+        })
+    })
+
+    const source = new EventSource('/visits')
+    
+    source.addEventListener('visits-changed', (event) => {
+        console.log(event.data)
+        const visits = JSON.parse(event.data).visits
+        document.getElementById('visits').innerHTML = visits
+    })
+
+    window.addEventListener('unload', (event) => {
+        source.close()
+    })
+</script>
