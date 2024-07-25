@@ -11,7 +11,7 @@ interface Visit {
   conversion_type: string
 }
 
-const db = await Deno.openKv();
+const kv = await Deno.openKv();
 const app = new Hono()
 const env = await load()
 
@@ -26,7 +26,7 @@ app.post('/visits', async (c) => {
   
     // TODO: check hmac
     
-    await db
+    await kv
       .atomic()
       .sum(['posts', post_id, conversion_type], 1n)
       .sum(['visits'], 1n)
@@ -42,7 +42,7 @@ app.post('/visits', async (c) => {
 
 app.get('/visits', (c) => {
   return streamSSE(c, async (stream) => {
-    const watcher = db.watch([['visits']])
+    const watcher = kv.watch([['visits']])
 
     for await (const [entry] of watcher) {
       const visits = entry.value
