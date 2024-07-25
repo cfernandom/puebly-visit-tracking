@@ -1,29 +1,54 @@
-<h2>Contador de visitas Puebly: </h2>
-<p id="visits"></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar UUID</title>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@latest/dist/umd/uuidv4.min.js"></script>
+    <script type="module">
+        let visitsCount = 0;
+        async function sendVisit() {
+            try {
+                await fetch('/visits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hmac: 'hmac',
+                        uuid: uuidv4(),
+                        post_id: '1',
+                        conversion_type: 'visit'
+                    })
+                });
+            } catch (error) {
+                console.error('Error sending visit:', error);
+            }
+        }
 
-<script type="module">
-    await fetch('/visits', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            hmac: 'hmac',
-            uuid: 'uuid',
-            post_id: '0',
-            conversion_type: 'visit'
-        })
-    })
+        function setupEventSource() {
+            const source = new EventSource('/visits');
+            console.log('Connected to event source');
+            
+            source.addEventListener('visits-changed', (event) => {
+                console.log('visits-changed event received:', event.data);
+                const visits = JSON.parse(event.data).visits;
+                document.getElementById('visits').innerText = visits;
+            });
 
-    const source = new EventSource('/visits')
-    
-    source.addEventListener('visits-changed', (event) => {
-        console.log(event.data)
-        const visits = JSON.parse(event.data).visits
-        document.getElementById('visits').innerHTML = visits
-    })
+            window.addEventListener('unload', () => {
+                source.close();
+            });
+        }
 
-    window.addEventListener('unload', (event) => {
-        source.close()
-    })
-</script>
+        window.addEventListener('load', () => {
+            setupEventSource()
+            sendVisit();
+        });
+    </script>
+</head>
+<body>
+    <h2>Contador de visitas Puebly: </h2>
+    <p id="visits">-</p>
+</body>
+</html>
