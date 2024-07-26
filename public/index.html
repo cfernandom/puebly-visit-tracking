@@ -6,10 +6,9 @@
     <title>Generar UUID</title>
     <script src="https://cdn.jsdelivr.net/npm/uuid@latest/dist/umd/uuidv4.min.js"></script>
     <script type="module">
-        let visitsCount = 0;
         async function sendVisit() {
             try {
-                await fetch('/visits', {
+                await fetch('/api/visits', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -27,11 +26,9 @@
         }
 
         function setupEventSource() {
-            const source = new EventSource('/visits');
-            console.log('Connected to event source');
+            const source = new EventSource('/api/visits');
             
             source.addEventListener('visits-changed', (event) => {
-                console.log('visits-changed event received:', event.data);
                 const visits = JSON.parse(event.data).visits;
                 document.getElementById('visits').innerText = visits;
             });
@@ -41,8 +38,9 @@
             });
         }
 
+        setupEventSource()
+
         window.addEventListener('load', () => {
-            setupEventSource()
             sendVisit();
         });
     </script>
