@@ -40,6 +40,20 @@ const insertPostVisit = async (uuid: string, post_id: number) => {
   `;
 };
 
+const billPostVisit = async (uuid: string, post_id: number, post_title: string | undefined) => {
+  const user = await getUserByUuid(uuid);
+  if (user.length === 0) {
+    await insertUser(uuid);
+  }
+
+  const post = await getPostById(post_id);
+  if (post.length === 0) {
+    await insertPost(post_id, post_title);
+  }
+
+  await insertPostVisit(uuid, post_id);
+}
+
 export const logPostVisit = async (c: Context) => {
   try {
     const { hmac, uuid, post_id, post_title } = await c.req.json<IPostVisitLog>();
@@ -52,17 +66,7 @@ export const logPostVisit = async (c: Context) => {
       return c.json({ error: "invalid data" }, 400);
     }
 
-    const user = await getUserByUuid(uuid);
-    if (user.length === 0) {
-      await insertUser(uuid);
-    }
-
-    const post = await getPostById(post_id);
-    if (post.length === 0) {
-      await insertPost(post_id, post_title);
-    }
-
-    await insertPostVisit(uuid, post_id);
+    await billPostVisit(uuid, post_id, post_title);
 
     return c.json({ message: "ok" });
   } catch (error) {
