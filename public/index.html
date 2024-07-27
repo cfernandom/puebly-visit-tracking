@@ -29,7 +29,7 @@
             try {
                 const response = await fetch('/api/v1/post-visits');
                 const visits = await response.json();
-                document.getElementById('visits').innerText = visits['visits'];
+                document.getElementById('valid-post-visits').innerText = visits['visits'];
             } catch (error) {
                 console.error('Error getting visits:', error);
             }
@@ -40,7 +40,7 @@
             
             source.addEventListener('post-user-visits-changed', (event) => {
                 const visits = JSON.parse(event.data).visits;
-                document.getElementById('visits').innerText = visits;
+                document.getElementById('valid-post-visits').innerText = visits;
             });
 
             window.addEventListener('unload', () => {
@@ -57,7 +57,10 @@
     </script>
 </head>
 <body>
-    <h2>Contador de visitas Puebly: </h2>
-    <p id="visits">-</p>
+    <h2>Puebly post tracking </h2>
+    <p>
+        <span>Valid post visits: </span>
+        <span id="valid-post-visits">-</span>
+    </p>
 </body>
 </html>
