@@ -2,6 +2,7 @@ import { Context } from "hono";
 import sql from "../config/db.ts";
 import validateHmac from "../utilities/hmac.ts";
 import { IPostVisitLog } from "../interfaces/IPostVisitLog.ts";
+
 const getUserByUuid = async (uuid: string) => {
   return await sql`
     SELECT * 
@@ -32,6 +33,23 @@ const insertPost = async (post_id: number, post_title: string | undefined) => {
   `;
 };
 
+const hasVisitedRecently = async (uuid: string, post_id: number): Promise<boolean> => {
+  const now = new Date();
+  const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  const sinceDate = twelveHoursAgo.toISOString();
+
+  const result = await sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM post_user_visits
+      WHERE user_id = ${uuid}
+        AND post_id = ${post_id}
+        AND time >= ${sinceDate}
+    ) AS visited_recently
+  `;
+  return result[0].visited_recently;
+};
+
 const insertPostVisit = async (uuid: string, post_id: number) => {
   const now = new Date().toISOString();
   await sql`
@@ -39,20 +57,6 @@ const insertPostVisit = async (uuid: string, post_id: number) => {
     VALUES (${now}, ${uuid}, ${post_id})
   `;
 };
-
-const billPostVisit = async (uuid: string, post_id: number, post_title: string | undefined) => {
-  const user = await getUserByUuid(uuid);
-  if (user.length === 0) {
-    await insertUser(uuid);
-  }
-
-  const post = await getPostById(post_id);
-  if (post.length === 0) {
-    await insertPost(post_id, post_title);
-  }
-
-  await insertPostVisit(uuid, post_id);
-}
 
 export const logPostVisit = async (c: Context) => {
   try {
@@ -66,7 +70,21 @@ export const logPostVisit = async (c: Context) => {
       return c.json({ error: "invalid data" }, 400);
     }
 
-    await billPostVisit(uuid, post_id, post_title);
+    const user = await getUserByUuid(uuid);
+    if (user.length === 0) {
+      await insertUser(uuid);
+    }
+
+    const post = await getPostById(post_id);
+    if (post.length === 0) {
+      await insertPost(post_id, post_title);
+    }
+
+    // bill post visit
+    const visitedToday = await hasVisitedRecently(uuid, post_id);
+    if (!visitedToday) {
+      await insertPostVisit(uuid, post_id);
+    }
 
     return c.json({ message: "ok" });
   } catch (error) {
