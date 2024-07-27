@@ -29,7 +29,7 @@
             try {
                 const response = await fetch('/api/v1/post-visits');
                 const visits = await response.json();
-                document.getElementById('valid-post-visits').innerText = visits['visits'];
+                document.getElementById('charged-post-visits').innerText = visits['visits'];
             } catch (error) {
                 console.error('Error getting visits:', error);
             }
@@ -40,7 +40,7 @@
             
             source.addEventListener('post-user-visits-changed', (event) => {
                 const visits = JSON.parse(event.data).visits;
-                document.getElementById('valid-post-visits').innerText = visits;
+                document.getElementById('charged-post-visits').innerText = visits;
             });
 
             window.addEventListener('unload', () => {
@@ -59,8 +59,8 @@
 <body>
     <h2>Puebly post tracking </h2>
     <p>
-        <span>Valid post visits: </span>
-        <span id="valid-post-visits">-</span>
+        <span>Charged post visits: </span>
+        <span id="charged-post-visits">-</span>
     </p>
 </body>
 </html>
