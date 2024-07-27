@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar UUID</title>
+    <title>Puebly Post Tracking</title>
     <script src="https://cdn.jsdelivr.net/npm/uuid@latest/dist/umd/uuidv4.min.js"></script>
     <script type="module">
         async function sendVisit() {
             try {
-                await fetch('/api/visits', {
+                await fetch('/api/v1/log-post-visit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -25,10 +25,20 @@
             }
         }
 
+        async function getVisits() {
+            try {
+                const response = await fetch('/api/v1/post-visits');
+                const visits = await response.json();
+                document.getElementById('visits').innerText = visits['visits'];
+            } catch (error) {
+                console.error('Error getting visits:', error);
+            }
+        }
+
         function setupEventSource() {
-            const source = new EventSource('/api/visits');
+            const source = new EventSource('/api/v1/post-log-stream');
             
-            source.addEventListener('visits-changed', (event) => {
+            source.addEventListener('post-user-visits-changed', (event) => {
                 const visits = JSON.parse(event.data).visits;
                 document.getElementById('visits').innerText = visits;
             });
@@ -41,7 +51,8 @@
         setupEventSource()
 
         window.addEventListener('load', () => {
-            sendVisit();
+            getVisits();
+            // sendVisit();
         });
     </script>
 </head>

@@ -4,8 +4,8 @@ import { SSEStreamingApi } from "jsr:@hono/hono@^4.5.1/streaming";
 
 const visitsSubject = new Subject<number>();
 
-await sql.listen("user_visits", async (_) => {
-  const result = await sql`SELECT COUNT(*) FROM user_visits`;
+await sql.listen("post_user_visits_channel", async (_) => {
+  const result = await sql`SELECT COUNT(*) FROM post_user_visits`;
   visitsSubject.next(result[0].count);
 });
 
@@ -36,7 +36,7 @@ export const createSSEStream = async (stream: SSEStreamingApi) => {
   for await (const visits of sseStream) {
     await stream.writeSSE({
       data: JSON.stringify({ visits: visits }),
-      event: "visits-changed",
+      event: "post-user-visits-changed",
     });
 
   }
