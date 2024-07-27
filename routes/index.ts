@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { healthCheck } from "../controllers/healthCheckController.ts";
-import visitRoutes from "./postTrackingRoutes.ts";
+import postTrackingRoutes from "./postTrackingRoutes.ts";
 import { serveStatic } from "hono/deno";
 import { corsMiddleware } from "../middlewares/corsMiddleware.ts";
 
@@ -10,7 +10,7 @@ app.use("*", corsMiddleware());
 
 app.get("/", serveStatic({ path: "./public/index.html" }));
 
-app.route("/api/v1", visitRoutes);
+app.route("/api/v1", postTrackingRoutes);
 
 app.get("/healthz", healthCheck);
 
