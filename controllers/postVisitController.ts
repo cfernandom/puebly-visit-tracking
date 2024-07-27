@@ -49,7 +49,7 @@ export const logPostVisit = async (c: Context) => {
     }
 
     if (!validateHmac(uuid, hmac)) {
-      return c.json({ error: "invalid hmac" }, 400);
+      return c.json({ error: "invalid data" }, 400);
     }
 
     const user = await getUserByUuid(uuid);
