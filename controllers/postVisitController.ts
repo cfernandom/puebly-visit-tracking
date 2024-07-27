@@ -2,6 +2,43 @@ import { Context } from "hono";
 import sql from "../config/db.ts";
 import validateHmac from "../utilities/hmac.ts";
 import { IPostVisitLog } from "../interfaces/IPostVisitLog.ts";
+const getUserByUuid = async (uuid: string) => {
+  return await sql`
+    SELECT * 
+    FROM users 
+    WHERE uuid = ${uuid}
+  `;
+};
+
+const insertUser = async (uuid: string) => {
+  await sql`
+    INSERT INTO users (uuid)
+    VALUES (${uuid})
+  `;
+};
+
+const getPostById = async (post_id: number) => {
+  return await sql`
+    SELECT *
+    FROM posts
+    WHERE id = ${post_id}
+  `;
+};
+
+const insertPost = async (post_id: number, post_title: string | undefined) => {
+  await sql`
+    INSERT INTO posts (id, title)
+    VALUES (${post_id}, ${post_title || 'Sin título'})
+  `;
+};
+
+const insertPostVisit = async (uuid: string, post_id: number) => {
+  const now = new Date().toISOString();
+  await sql`
+    INSERT INTO post_user_visits (time, user_id, post_id)
+    VALUES (${now}, ${uuid}, ${post_id})
+  `;
+};
 
 export const logPostVisit = async (c: Context) => {
   try {
@@ -15,42 +52,17 @@ export const logPostVisit = async (c: Context) => {
       return c.json({ error: "invalid hmac" }, 400);
     }
 
-    const user = await sql`
-        SELECT * 
-        FROM users 
-        WHERE uuid = ${uuid}
-      `;
+    const user = await getUserByUuid(uuid);
     if (user.length === 0) {
-      await sql`
-          INSERT INTO users 
-            (uuid)
-          VALUES 
-            (${uuid})
-        `;
+      await insertUser(uuid);
     }
 
-    const post = await sql`
-        SELECT *
-        FROM posts
-        WHERE id = ${post_id}
-      `;
-
+    const post = await getPostById(post_id);
     if (post.length === 0) {
-      await sql`
-          INSERT INTO posts
-            (id, title)
-          VALUES
-            (${post_id}, ${post_title || 'Sin título'})
-        `;
+      await insertPost(post_id, post_title);
     }
 
-    const now = new Date().toISOString();
-    await sql`
-        INSERT INTO post_user_visits
-          (time, user_id, post_id)
-        VALUES 
-          (${now}, ${uuid}, ${post_id})
-      `;
+    await insertPostVisit(uuid, post_id);
 
     return c.json({ message: "ok" });
   } catch (error) {
@@ -61,11 +73,11 @@ export const logPostVisit = async (c: Context) => {
 export const getPostVisits = async (c: Context) => {
   try {
     const visits = await sql`
-        SELECT COUNT(*) AS visits
-        FROM post_user_visits
-      `;
+      SELECT COUNT(*) AS visits
+      FROM post_user_visits
+    `;
     return c.json({ visits: visits[0].visits });
   } catch (error) {
     return c.json({ error: error.message }, 400);
   }
-}
+};
