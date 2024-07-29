@@ -1,5 +1,6 @@
 import { Context } from "hono";
 import sql from "../config/db.ts";
+import kv from "../config/kv.ts";
 import validateHmac from "../utilities/hmac.ts";
 import { IPostVisitLog } from "../interfaces/IPostVisitLog.ts";
 
@@ -58,6 +59,14 @@ const insertPostVisit = async (uuid: string, post_id: number) => {
   `;
 };
 
+const logPostVisitToKv = async (uuid: string, post_id: number) => {
+  await kv.atomic()
+    .sum(["visits", "post", post_id], 1n)
+    .sum(["visits", "user", uuid], 1n)
+    .sum(["visits", "total"], 1n)
+    .commit();
+};
+
 export const logPostVisit = async (c: Context) => {
   try {
     const { hmac, uuid, post_id, post_title } = await c.req.json<IPostVisitLog>();
@@ -86,6 +95,8 @@ export const logPostVisit = async (c: Context) => {
       await insertPostVisit(uuid, post_id);
     }
 
+    await logPostVisitToKv(uuid, post_id);
+
     return c.json({ message: "ok" });
   } catch (error) {
     return c.json({ error: error.message }, 400);
@@ -103,3 +114,13 @@ export const getPostVisits = async (c: Context) => {
     return c.json({ error: error.message }, 400);
   }
 };
+
+export const getTotalPostVisits = async (c: Context) => {
+  try {
+    const visits = await kv.get(["visits", "total"]);
+    const totalVisits = visits.value ?? 0n;
+    return c.json({ visits: totalVisits.toString() });
+  } catch (error) {
+    return c.json({ error: error.message }, 400);
+  }
+}

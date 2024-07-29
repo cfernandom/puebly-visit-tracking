@@ -25,7 +25,7 @@
             }
         }
 
-        async function getVisits() {
+        async function getChargedVisits() {
             try {
                 const response = await fetch('/api/v1/post-visits');
                 const visits = await response.json();
@@ -35,23 +35,43 @@
             }
         }
 
-        function setupEventSource() {
-            const source = new EventSource('/api/v1/post-log-stream');
+        async function getTotalVisitsCount() {
+            try {
+                const response = await fetch('/api/v1/total-post-visits');
+                const visits = await response.json();
+                document.getElementById('total-post-visits').innerText = visits['visits'];
+            } catch (error) {
+                console.error('Error getting total visits:', error);
+            }
+        }
+                
+
+        function setupEventSources() {
+            const postVisitssource = new EventSource('/api/v1/post-log-stream');
             
-            source.addEventListener('post-user-visits-changed', (event) => {
+            postVisitssource.addEventListener('post-user-visits-changed', (event) => {
                 const visits = JSON.parse(event.data).visits;
                 document.getElementById('charged-post-visits').innerText = visits;
             });
 
+            const totalVisitssource = new EventSource('/api/v1/post-log-kv-stream');
+
+            totalVisitssource.addEventListener('total-visits-changed', (event) => {
+                const visits = JSON.parse(event.data).visits;
+                document.getElementById('total-post-visits').innerText = visits;
+            });
+
             window.addEventListener('unload', () => {
-                source.close();
+                postVisitssource.close();
+                totalVisitssource.close();
             });
         }
 
-        setupEventSource()
+        setupEventSources()
 
         window.addEventListener('load', () => {
-            getVisits();
+            getChargedVisits();
+            getTotalVisitsCount();
             // sendVisit();
         });
     </script>
@@ -61,6 +81,10 @@
     <p>
         <span>Charged post visits: </span>
         <span id="charged-post-visits">-</span>
+    </p>
+    <p>
+        <span>Total post visits: </span>
+        <span id="total-post-visits">-</span>
     </p>
 </body>
 </html>
