@@ -10,4 +10,15 @@ const sql = postgres("", {
   publications: "alltables",
 });
 
+async function testConnection() {
+  try {
+    await sql`SELECT 1`; // Consulta de prueba
+    console.log("Conexión exitosa a PostgreSQL");
+  } catch (error) {
+    console.error("Error conectando a la base de datos:", error.message);
+  }
+}
+
+testConnection();
+
 export default sql;
