@@ -37,12 +37,11 @@ const billPostVisit = async (uuid: string, post_id: number, title?: string) => {
   });
 }
 
-const logPostVisitToKv = async (uuid: string, post_id: number, title?: string) => {
+const logPostVisitToKv = async (uuid: string, post_id: number) => {
   await kv.atomic()
     .sum(["visits", "posts", post_id], 1n)
     .sum(["visits", "users", uuid], 1n)
     .sum(["visits", "total"], 1n)
-    .set(["posts", post_id, "title"], title || "Sin título")
     .commit();
 };
 
@@ -58,7 +57,7 @@ export const logPostVisit = async (c: Context) => {
       return c.json({ error: "invalid data" }, 400);
     }
     
-    await logPostVisitToKv(uuid, post_id, post_title);
+    await logPostVisitToKv(uuid, post_id);
     
     await billPostVisit(uuid, post_id, post_title);
 
