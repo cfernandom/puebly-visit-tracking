@@ -44,6 +44,29 @@
                 console.error('Error getting total visits:', error);
             }
         }
+
+        async function getChargedInteractions() {
+            try {
+                const response = await fetch('/api/v1/charged-post-interactions');
+                const data = await response.json();
+                const interactions = data.interactions;
+            
+                interactions.forEach((interaction) => {
+                    if (interaction['type'] === 'call') {
+                        document.getElementById('charged-post-call').innerText = interaction['total'];
+                    }
+                    if (interaction['type'] === 'location') {
+                        document.getElementById('charged-post-location').innerText = interaction['total'];
+                    }
+                    if (interaction['type'] === 'whatsapp') {
+                        document.getElementById('charged-post-whatsapp').innerText = interaction['total'];
+                    }
+                })
+                    
+            } catch (error) {
+                console.error('Error getting interactions:', error);
+            }
+        }
                 
 
         function setupEventSources() {
@@ -61,9 +84,46 @@
                 document.getElementById('total-post-visits').innerText = visits;
             });
 
+            const interactionsSource = new EventSource('/api/v1/post-interactions-stream');
+
+            interactionsSource.addEventListener('post-user-interactions-changed', (event) => {
+                const interactions = JSON.parse(event.data).interactions;
+                
+                interactions.forEach((interaction) => {
+                    if (interaction['type'] === 'call') {
+                        document.getElementById('charged-post-call').innerText = interaction['total'];
+                    }
+                    if (interaction['type'] === 'location') {
+                        document.getElementById('charged-post-location').innerText = interaction['total'];
+                    }
+                    if (interaction['type'] === 'whatsapp') {
+                        document.getElementById('charged-post-whatsapp').innerText = interaction['total'];
+                    }
+                })
+            });
+
+            const totalInteractionsSource = new EventSource('/api/v1/total-post-interactions-stream');
+
+            totalInteractionsSource.addEventListener('total-interactions-changed', (event) => {
+                const interactions = JSON.parse(event.data).interactions;
+                interactions.forEach((interaction) => {
+                    if (interaction['type'] === 'call') {
+                        document.getElementById('total-post-call').innerText = interaction['total'];
+                    }
+                    if (interaction['type'] === 'location') {
+                        document.getElementById('total-post-location').innerText = interaction['total'];
+                    }
+                    if (interaction['type'] === 'whatsapp') {
+                        document.getElementById('total-post-whatsapp').innerText = interaction['total'];
+                    }
+                })
+            });
+
             window.addEventListener('unload', () => {
                 postVisitssource.close();
                 totalVisitssource.close();
+                interactionsSource.close();
+                totalInteractionsSource.close();
             });
         }
 
@@ -72,6 +132,7 @@
         window.addEventListener('load', () => {
             getChargedVisits();
             getTotalVisitsCount();
+            getChargedInteractions();
             // sendVisit();
         });
     </script>
@@ -85,6 +146,31 @@
     <p>
         <span>Total post visits: </span>
         <span id="total-post-visits">-</span>
+    </p>
+    <p>
+        Charged post call interactions: 
+        <span id="charged-post-call">-</span>
+    </p>
+    <p>
+        Charged post location interactions:
+        <span id="charged-post-location">-</span>
+    </p>
+    <p>
+        Charged post whatsapp interactions:
+        <span id="charged-post-whatsapp">-</span>
+    </p>
+
+    <p>
+        total post call interactions: 
+        <span id="total-post-call">-</span>
+    </p>
+    <p>
+        total post location interactions:
+        <span id="total-post-location">-</span>
+    </p>
+    <p>
+        total post whatsapp interactions:
+        <span id="total-post-whatsapp">-</span>
     </p>
 </body>
 </html>

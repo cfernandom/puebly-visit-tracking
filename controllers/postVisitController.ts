@@ -22,9 +22,9 @@ const billPostVisit = async (uuid: string, post_id: number, title?: string) => {
       SELECT EXISTS (
           SELECT 1
           FROM post_user_visits
-          WHERE user_id = ${uuid}
+          WHERE time > now() - INTERVAL '12 hours'
+          AND user_id = ${uuid}
           AND post_id = ${post_id}
-          AND time > now() - INTERVAL '12 hours'
       ) AS has_visited;
     `;
 
@@ -37,11 +37,12 @@ const billPostVisit = async (uuid: string, post_id: number, title?: string) => {
   });
 }
 
-const logPostVisitToKv = async (uuid: string, post_id: number) => {
+const logPostVisitToKv = async (uuid: string, post_id: number, title?: string) => {
   await kv.atomic()
-    .sum(["visits", "post", post_id], 1n)
-    .sum(["visits", "user", uuid], 1n)
+    .sum(["visits", "posts", post_id], 1n)
+    .sum(["visits", "users", uuid], 1n)
     .sum(["visits", "total"], 1n)
+    .set(["posts", post_id, "title"], title || "Sin título")
     .commit();
 };
 
@@ -57,7 +58,7 @@ export const logPostVisit = async (c: Context) => {
       return c.json({ error: "invalid data" }, 400);
     }
     
-    await logPostVisitToKv(uuid, post_id);
+    await logPostVisitToKv(uuid, post_id, post_title);
     
     await billPostVisit(uuid, post_id, post_title);
 
