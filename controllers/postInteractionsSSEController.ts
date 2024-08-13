@@ -2,6 +2,7 @@ import { SSEStreamingApi } from "jsr:@hono/hono@^4.5.1/streaming";
 import sql from "../config/db.ts";
 import { Subject } from "npm:rxjs@7.8.1";
 import { IInteraction } from "../interfaces/IInteraction.ts";
+import { cleanupSubscription } from "../utilities/subscription.ts";
 
 const interactionsSubject = new Subject<IInteraction[]>();
 
@@ -26,18 +27,6 @@ export const postInteractionsSSEController = async (
 
     await streamSSEData(sseStream, stream);
 };
-
-function cleanupSubscription(
-    subscription: ReturnType<typeof interactionsSubject.subscribe>,
-    controller: ReadableStreamDefaultController<IInteraction[]> | undefined,
-    stream: SSEStreamingApi,
-) {
-    if (controller) {
-        controller = undefined;
-    }
-    subscription.unsubscribe();
-    stream.close();
-}
 
 function createSSEStream(
     onStart: (ctrl: ReadableStreamDefaultController<IInteraction[]>) => void,
