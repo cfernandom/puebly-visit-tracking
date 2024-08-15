@@ -3,6 +3,7 @@ import sql from "../config/db.ts";
 import { Subject } from "npm:rxjs@7.8.1";
 import { IInteraction } from "../interfaces/IInteraction.ts";
 import { cleanupSubscription } from "../utilities/subscription.ts";
+import { createSSEStream, streamSSEData } from "../utilities/sse.ts";
 
 const interactionsSubject = new Subject<IInteraction[]>();
 
@@ -25,33 +26,8 @@ export const postInteractionsSSEController = async (
         controller = ctrl;
     });
 
-    await streamSSEData(sseStream, stream);
+    await streamSSEData(sseStream, stream, "post-user-interactions-changed");
 };
-
-function createSSEStream(
-    onStart: (ctrl: ReadableStreamDefaultController<IInteraction[]>) => void,
-) {
-    return new ReadableStream<IInteraction[]>({
-        start(ctrl) {
-            onStart(ctrl);
-        },
-        cancel() {
-            onStart(undefined!);
-        },
-    });
-}
-
-async function streamSSEData(
-    sseStream: ReadableStream<IInteraction[]>,
-    stream: SSEStreamingApi,
-) {
-    for await (const interactions of sseStream) {
-        await stream.writeSSE({
-            data: JSON.stringify({ interactions }),
-            event: "post-user-interactions-changed",
-        });
-    }
-}
 
 async function fetchInteractions(): Promise<IInteraction[]> {
     const result = await sql`

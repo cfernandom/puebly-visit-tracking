@@ -73,7 +73,7 @@
             const postVisitssource = new EventSource('/api/v1/post-log-stream');
             
             postVisitssource.addEventListener('post-user-visits-changed', (event) => {
-                const visits = JSON.parse(event.data).visits;
+                const visits = JSON.parse(event.data).data;
                 document.getElementById('charged-post-visits').innerText = visits;
             });
 
@@ -87,7 +87,7 @@
             const interactionsSource = new EventSource('/api/v1/post-interactions-stream');
 
             interactionsSource.addEventListener('post-user-interactions-changed', (event) => {
-                const interactions = JSON.parse(event.data).interactions;
+                const interactions = JSON.parse(event.data).data;
                 
                 interactions.forEach((interaction) => {
                     if (interaction['type'] === 'call') {

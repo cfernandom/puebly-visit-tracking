@@ -2,6 +2,7 @@ import { SSEStreamingApi } from "jsr:@hono/hono@^4.5.1/streaming";
 import { Subject } from "npm:rxjs@7.8.1";
 import { cleanupSubscription } from "../utilities/subscription.ts";
 import sql from "../config/db.ts";
+import { createSSEStream, streamSSEData } from "../utilities/sse.ts";
 
 const visitsSubject = new Subject<number>();
 
@@ -22,33 +23,8 @@ export const postVisitSSEController = async (stream: SSEStreamingApi) => {
         controller = ctrl;
     });
 
-    await streamSSEData(sseStream, stream);
+    await streamSSEData(sseStream, stream, "post-user-visits-changed");
 };
-
-function createSSEStream(
-    onStart: (ctrl: ReadableStreamDefaultController<number>) => void,
-) {
-    return new ReadableStream<number>({
-        start(ctrl) {
-            onStart(ctrl);
-        },
-        cancel() {
-            onStart(undefined!);
-        },
-    });
-}
-
-async function streamSSEData(
-    sseStream: ReadableStream<number>,
-    stream: SSEStreamingApi,
-) {
-    for await (const visits of sseStream) {
-        await stream.writeSSE({
-            data: JSON.stringify({ visits: visits }),
-            event: "post-user-visits-changed",
-        });
-    }
-}
 
 async function fetchVisits(): Promise<number> {
     const result = await sql`SELECT COUNT(*) FROM post_user_visits`;
